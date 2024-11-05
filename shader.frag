@@ -17,6 +17,8 @@ uniform vec2 u_cameraRotation; // [yaw, pitch]
 in vec2 f_uv;
 out vec4 outColor;
 
+// fonctions pour les formes primitives  SDF en Raymarching (source: https://iquilezles.org/articles/distfunctions/)
+
 float boxSDF(vec3 p, vec3 b) {
     vec3 d = abs(p) - b;
     return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
@@ -25,7 +27,16 @@ float boxSDF(vec3 p, vec3 b) {
 float planeSDF(vec3 p, vec3 n, float h) {
     return dot(p, n) + h;
 }
+float sdp_sphere(vec3 p, float r) {
+    return length(p) - r;
+}
 
+// fonctions pour un mélange interéssant entre 2 forms SDF (source: https://iquilezles.org/articles/smin/)
+float smin(float a, float b, float k) {
+    k = max(k, 0.0001);
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
 float mazeSize = 8.0;
 
 float sdf_scene(vec3 p) {
@@ -42,9 +53,17 @@ float sdf_scene(vec3 p) {
 
                 // Distance au cube (mur)
                 float dCube = boxSDF(p - cubePos, vec3(0.5));
+                // Ajouter une sphère mobile au-dessus du cube
+                float yOffset = sin(u_time + float(x + z)) * (0.5*(float(z)+1.0)) + 1.0; // Mouvement vertical oscillant
+                vec3 spherePos = cubePos + vec3(0.0, yOffset, 0.0);
+                float dSphere = sdp_sphere(p - spherePos, 0.3);
+
+                // Fusionner le cube et la sphère
+                float dCombined = smin(dCube, dSphere, 0.35); // Le 3e element permet de contrôler l'intensité du mélange
 
                 // Prendre la distance minimale pour la scène
                 sceneDistance = min(sceneDistance, dCube);
+                sceneDistance = min(sceneDistance, dCombined);
             }
         }
     }

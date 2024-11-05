@@ -34,7 +34,7 @@ const maze = [
   [1, 0, 0, 1, 0, 0, 0, 1],
   [1, 0, 1, 1, 1, 1, 0, 1],
   [1, 0, 0, 0, 0, 0, 0, 1],
-  [1, 1, 1, 0, 1, 1, 1, 1],
+  [1, 1, 0, 1, 1, 0, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 1]
@@ -184,34 +184,85 @@ async function main() {
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas(); // Appel initial
 
+  // Variables pour suivre l'état des boutons
+  const buttonStates = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  };
+
+  // Variables pour suivre l'état des touches
+  const keyStates = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    z: false,
+    q: false,
+    s: false,
+    d: false,
+    Z: false,
+    Q: false,
+    S: false,
+    D: false,
+  };
+
+  // Fonction pour gérer les états des boutons
+  const setButtonState = (buttonName, isPressed) => {
+    buttonStates[buttonName] = isPressed;
+  };
+
   // Écouteurs d'événements pour les boutons
-  const addButtonEventListener = (id, callback) => {
+  const addButtonEventListener = (id, buttonName) => {
     const button = document.getElementById(id);
-    button.addEventListener('click', callback);
+    button.addEventListener('mousedown', (event) => {
+      setButtonState(buttonName, true);
+      event.preventDefault();
+    });
+    button.addEventListener('mouseup', (event) => {
+      setButtonState(buttonName, false);
+      event.preventDefault();
+    });
+    button.addEventListener('mouseleave', (event) => {
+      setButtonState(buttonName, false);
+      event.preventDefault();
+    });
     button.addEventListener('touchstart', (event) => {
-      callback();
+      setButtonState(buttonName, true);
+      event.preventDefault();
+    });
+    button.addEventListener('touchend', (event) => {
+      setButtonState(buttonName, false);
+      event.preventDefault();
+    });
+    button.addEventListener('touchcancel', (event) => {
+      setButtonState(buttonName, false);
       event.preventDefault();
     });
   };
 
-  addButtonEventListener('btn-up', () => movePlayer(0, 1));
-  addButtonEventListener('btn-down', () => movePlayer(0, -1));
-  addButtonEventListener('btn-left', () => movePlayer(-1, 0));
-  addButtonEventListener('btn-right', () => movePlayer(1, 0));
+  addButtonEventListener('btn-up', 'up');
+  addButtonEventListener('btn-down', 'down');
+  addButtonEventListener('btn-left', 'left');
+  addButtonEventListener('btn-right', 'right');
 
-  addButtonEventListener('btn-arrow-up', () => movePlayer(0, 1));
-  addButtonEventListener('btn-arrow-down', () => movePlayer(0, -1));
-  addButtonEventListener('btn-arrow-left', () => movePlayer(-1, 0));
-  addButtonEventListener('btn-arrow-right', () => movePlayer(1, 0));
+  addButtonEventListener('btn-arrow-up', 'up');
+  addButtonEventListener('btn-arrow-down', 'down');
+  addButtonEventListener('btn-arrow-left', 'left');
+  addButtonEventListener('btn-arrow-right', 'right');
 
-  addButtonEventListener('btn-switch-camera', () => {
+  // Écouteur pour le bouton de changement de caméra
+  const switchCameraButton = document.getElementById('btn-switch-camera');
+  switchCameraButton.addEventListener('click', () => {
     cameraMode = (cameraMode === 'overhead') ? 'first-person' : 'overhead';
+  });
+  switchCameraButton.addEventListener('touchstart', (event) => {
+    cameraMode = (cameraMode === 'overhead') ? 'first-person' : 'overhead';
+    event.preventDefault();
   });
 
   function movePlayer(dx, dz) {
-    // Déplacement uniquement en mode overhead
-    if (cameraMode !== 'overhead') return;
-
     const newX = playerPosition.x + dx * playerSpeed * time.dt();
     const newZ = playerPosition.z + dz * playerSpeed * time.dt();
 
@@ -239,28 +290,16 @@ async function main() {
   // Entrée clavier
   document.addEventListener('keydown', (event) => {
     if (cameraMode !== 'overhead') return; // Déplacement uniquement en mode overhead
+    if (keyStates.hasOwnProperty(event.key)) {
+      keyStates[event.key] = true;
+      event.preventDefault();
+    }
+  });
 
-    switch (event.key) {
-      case 'z':
-      case 'Z':
-      case 'ArrowUp':
-        movePlayer(0, 1);
-        break;
-      case 's':
-      case 'S':
-      case 'ArrowDown':
-        movePlayer(0, -1);
-        break;
-      case 'q':
-      case 'Q':
-      case 'ArrowLeft':
-        movePlayer(-1, 0);
-        break;
-      case 'd':
-      case 'D':
-      case 'ArrowRight':
-        movePlayer(1, 0);
-        break;
+  document.addEventListener('keyup', (event) => {
+    if (keyStates.hasOwnProperty(event.key)) {
+      keyStates[event.key] = false;
+      event.preventDefault();
     }
   });
 
@@ -332,6 +371,32 @@ async function main() {
 
   function loop() {
     resizeCanvas(); // Assurer que la taille du canvas est à jour
+
+    // Déplacer le joueur si des boutons ou des touches sont enfoncés
+    if (cameraMode === 'overhead') {
+      let dx = 0;
+      let dz = 0;
+
+      // Contrôles via les boutons HTML
+      if (buttonStates.up) dz += 1;
+      if (buttonStates.down) dz -= 1;
+      if (buttonStates.left) dx -= 1;
+      if (buttonStates.right) dx += 1;
+
+      // Contrôles via le clavier
+      if (keyStates.ArrowUp || keyStates.z || keyStates.Z) dz += 1;
+      if (keyStates.ArrowDown || keyStates.s || keyStates.S) dz -= 1;
+      if (keyStates.ArrowLeft || keyStates.q || keyStates.Q) dx -= 1;
+      if (keyStates.ArrowRight || keyStates.d || keyStates.D) dx += 1;
+
+      // Normaliser le déplacement
+      if (dx !== 0 || dz !== 0) {
+        const length = Math.sqrt(dx * dx + dz * dz);
+        dx /= length;
+        dz /= length;
+        movePlayer(dx, dz);
+      }
+    }
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);

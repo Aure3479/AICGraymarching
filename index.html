@@ -4,7 +4,6 @@
         <title>Ray Marching - Labyrinthe 3D</title>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- Inclure le CSS -->
         <style>
             /* CSS pour ajuster la mise en page */
             body, html {
@@ -17,7 +16,7 @@
             #canvas-container {
                 position: relative;
                 width: 100%;
-                height: calc(100% - 100px); /* Ajuster en fonction de la hauteur des en-têtes et des contrôles */
+                height: calc(100% - 100px); /*Permet d'ajuster en fonction de la hauteur des en-têtes et des contrôles */
             }
 
             #canvas {
@@ -28,7 +27,7 @@
 
             #controls {
                 position: absolute;
-                bottom: 10px;
+                bottom: 20px;
                 width: 100%;
                 text-align: center;
             }
@@ -46,12 +45,13 @@
         </style>
     </head>
     <body class="open-sans-normal">
-        <h2 class="open-sans-bold">Labyrinthe 3D avec Ray Marching</h2>
+         <h2 class="open-sans-bold">Labyrinthe 3D avec Ray Marching</h2>
+        <h4 class="open-sans-bold">Only 1st person can you touch the screen and move the camera        |||        Only 3rd person can you move the cube</h4>
         <p style="font-size: 1.5rem" class="open-sans-bold">
             <span id="fps">60</span> <span>FPS</span>
         </p>
         <div id="canvas-container">
-            <canvas id="canvas"></canvas>
+
             <!-- Boutons de contrôle -->
             <div id="controls">
                 <!-- Boutons ZQSD -->
@@ -67,9 +67,9 @@
                 <!-- Bouton pour changer de caméra -->
                 <button id="btn-switch-camera">Changer de caméra</button>
             </div>
+            <canvas id="canvas"></canvas>
         </div>
-
-        <!-- Placer les scripts à la fin du body -->
+        
         <script id="vert" src="shader.vert" type="x-shader/x-vertex"></script>
         <script id="frag" src="shader.frag" type="x-shader/x-fragment"></script>
         <script src="script.js" type="module"></script>
