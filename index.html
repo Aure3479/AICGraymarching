@@ -1,0 +1,43 @@
+<!doctype html>
+
+<html>
+    <head>
+        <title>Ray Marching - Labyrinthe 3D</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="../style.css" />
+    </head>
+    <body class="open-sans-normal">
+        <h2 class="open-sans-bold">Labyrinthe 3D avec Ray Marching</h2>
+        <p style="text-align: center; font-size: 2rem" class="open-sans-bold">
+            <span id="fps">60</span> <span>FPS</span>
+        </p>
+
+        <!-- Boutons de contrôle -->
+        <div id="controls" style="text-align: center; margin-top: 10px;">
+            <!-- Boutons ZQSD -->
+            <button id="btn-up">Z</button>
+            <button id="btn-left">Q</button>
+            <button id="btn-down">S</button>
+            <button id="btn-right">D</button>
+            <!-- Flèches directionnelles -->
+            <button id="btn-arrow-up">↑</button>
+            <button id="btn-arrow-left">←</button>
+            <button id="btn-arrow-down">↓</button>
+            <button id="btn-arrow-right">→</button>
+            <!-- Bouton pour changer de caméra -->
+            <button id="btn-switch-camera">Changer de caméra</button>
+        </div>
+        <div style="width: 100%">
+            <canvas
+                id="canvas"
+                width="400"
+                height="400"
+                style="width: 100%; margin: 0 auto"
+            ></canvas>
+        </div>
+        <script src="script.js" type="module"></script>
+        <script id="vert" src="shader.vert" type="x-shader/x-vertex"></script>
+        <script id="frag" src="shader.frag" type="x-shader/x-fragment"></script>
+    </body>
+</html>
