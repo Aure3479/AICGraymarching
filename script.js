@@ -36,7 +36,7 @@ const maze = [
   [1, 0, 0, 0, 0, 0, 0, 1],
   [1, 1, 1, 0, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 1],
-  [1, 1, 1, 0, 1, 1, 0, 1],
+  [1, 1, 1, 0, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 1]
 ];
 
@@ -119,7 +119,7 @@ async function main() {
 
   // Créer et charger la texture de la matrice
   const mazeTexture = createMazeTexture(gl, maze);
-  
+
   gl.useProgram(program); // Utiliser le programme avant de définir les uniformes
   gl.activeTexture(gl.TEXTURE0); // Assure que TEXTURE0 est activée
   gl.bindTexture(gl.TEXTURE_2D, mazeTexture);
@@ -164,21 +164,47 @@ async function main() {
 
   // Caméra
   let cameraMode = 'overhead'; // 'overhead' ou 'first-person'
-  let cameraYaw = 0;
-  let cameraPitch = 0;
+  let cameraYaw = 0.0;
+  let cameraPitch = 0.0;
+
+  // Contrôles
+  let isPointerLocked = false;
+  let isTouchMoving = false;
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+
+  const canvasContainer = document.getElementById('canvas-container');
+
+  // Fonction pour redimensionner le canvas
+  function resizeCanvas() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas(); // Appel initial
 
   // Écouteurs d'événements pour les boutons
-  document.getElementById('btn-up').addEventListener('click', () => movePlayer(0, -1));
-  document.getElementById('btn-down').addEventListener('click', () => movePlayer(0, 1));
-  document.getElementById('btn-left').addEventListener('click', () => movePlayer(-1, 0));
-  document.getElementById('btn-right').addEventListener('click', () => movePlayer(1, 0));
+  const addButtonEventListener = (id, callback) => {
+    const button = document.getElementById(id);
+    button.addEventListener('click', callback);
+    button.addEventListener('touchstart', (event) => {
+      callback();
+      event.preventDefault();
+    });
+  };
 
-  document.getElementById('btn-arrow-up').addEventListener('click', () => movePlayer(0, -1));
-  document.getElementById('btn-arrow-down').addEventListener('click', () => movePlayer(0, 1));
-  document.getElementById('btn-arrow-left').addEventListener('click', () => movePlayer(-1, 0));
-  document.getElementById('btn-arrow-right').addEventListener('click', () => movePlayer(1, 0));
+  addButtonEventListener('btn-up', () => movePlayer(0, 1));
+  addButtonEventListener('btn-down', () => movePlayer(0, -1));
+  addButtonEventListener('btn-left', () => movePlayer(-1, 0));
+  addButtonEventListener('btn-right', () => movePlayer(1, 0));
 
-  document.getElementById('btn-switch-camera').addEventListener('click', () => {
+  addButtonEventListener('btn-arrow-up', () => movePlayer(0, 1));
+  addButtonEventListener('btn-arrow-down', () => movePlayer(0, -1));
+  addButtonEventListener('btn-arrow-left', () => movePlayer(-1, 0));
+  addButtonEventListener('btn-arrow-right', () => movePlayer(1, 0));
+
+  addButtonEventListener('btn-switch-camera', () => {
     cameraMode = (cameraMode === 'overhead') ? 'first-person' : 'overhead';
   });
 
@@ -218,12 +244,12 @@ async function main() {
       case 'z':
       case 'Z':
       case 'ArrowUp':
-        movePlayer(0, -1);
+        movePlayer(0, 1);
         break;
       case 's':
       case 'S':
       case 'ArrowDown':
-        movePlayer(0, 1);
+        movePlayer(0, -1);
         break;
       case 'q':
       case 'Q':
@@ -239,14 +265,53 @@ async function main() {
   });
 
   // Mouvement de la souris pour la caméra en première personne
-  let isPointerLocked = false;
-
   canvas.addEventListener('click', () => {
-    if (cameraMode === 'first-person' && !isPointerLocked) {
-      canvas.requestPointerLock();
+    if (cameraMode === 'first-person') {
+      if ('ontouchstart' in window) {
+        // Sur les appareils tactiles, démarrer le mouvement tactile
+        isTouchMoving = true;
+      } else {
+        // Sur ordinateur, demander le verrouillage du pointeur
+        canvas.requestPointerLock();
+      }
     }
   });
 
+  // Événements tactiles pour le contrôle de la caméra
+  canvas.addEventListener('touchstart', (event) => {
+    if (cameraMode === 'first-person') {
+      isTouchMoving = true;
+      const touch = event.touches[0];
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      event.preventDefault();
+    }
+  });
+
+  canvas.addEventListener('touchmove', (event) => {
+    if (cameraMode !== 'first-person' || !isTouchMoving) return;
+    const touch = event.touches[0];
+    const movementX = touch.clientX - lastTouchX;
+    const movementY = touch.clientY - lastTouchY;
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+
+    cameraYaw -= movementX * 0.005; // Ajuster la sensibilité si nécessaire
+    cameraPitch -= movementY * 0.005;
+
+    // Limiter l'angle de la caméra
+    const maxPitch = Math.PI / 2 - 0.01;
+    cameraPitch = Math.max(-maxPitch, Math.min(maxPitch, cameraPitch));
+
+    event.preventDefault();
+  });
+
+  canvas.addEventListener('touchend', (event) => {
+    isTouchMoving = false;
+    event.preventDefault();
+  });
+
+  // Écouteur pour le changement du verrouillage du pointeur
   document.addEventListener('pointerlockchange', () => {
     isPointerLocked = document.pointerLockElement === canvas;
   });
@@ -257,7 +322,7 @@ async function main() {
     const movementX = event.movementX || 0;
     const movementY = event.movementY || 0;
 
-    cameraYaw += movementX * 0.002;
+    cameraYaw -= movementX * 0.002;
     cameraPitch -= movementY * 0.002;
 
     // Limiter l'angle de la caméra
@@ -266,6 +331,8 @@ async function main() {
   });
 
   function loop() {
+    resizeCanvas(); // Assurer que la taille du canvas est à jour
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -290,4 +357,3 @@ async function main() {
 }
 
 document.addEventListener('DOMContentLoaded', main);
-

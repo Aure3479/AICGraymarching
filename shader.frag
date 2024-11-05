@@ -26,12 +26,6 @@ float planeSDF(vec3 p, vec3 n, float h) {
     return dot(p, n) + h;
 }
 
-float smin(float a, float b, float k) {
-    k = max(k, 0.0001);
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
-}
-
 float mazeSize = 8.0;
 
 float sdf_scene(vec3 p) {
@@ -87,6 +81,16 @@ vec3 approx_normal(vec3 p) {
     );
 }
 
+// Fonction pour appliquer une palette de couleurs
+vec3 palette(float t) {
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.00, 0.33, 0.67); // Ajuster si nécessaire
+
+    return a + b * cos(6.28318 * (c * t + d));
+}
+
 void main() {
     vec2 uv = (f_uv - 0.5) * 2.0; // UV variant de -1 à 1
 
@@ -128,26 +132,34 @@ void main() {
 
         vec3 n = approx_normal(p);
 
-        // Éclairage
+        // Direction de la lumière et intensité
         vec3 l_dir = normalize(l_pos - p);
-        float diff = max(0.0, dot(n, l_dir));
+        float distanceToLight = length(l_pos - p);
+        float lightIntensity = 1.0 / (distanceToLight * distanceToLight); // Loi de l'inverse du carré
+        lightIntensity = clamp(lightIntensity, 0.0, 1.0); // Limiter entre [0,1]
+
+        float diff = max(0.0, dot(n, l_dir)) * lightIntensity;
 
         // Lumière spéculaire
         vec3 viewDir = normalize(ro - p);
         vec3 reflectDir = reflect(-l_dir, n);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0) * lightIntensity;
         vec3 specular = spec * l_col;
 
         // Déterminer quel objet a été touché
         float dPlayer = boxSDF(p - u_playerPosition, vec3(0.3));
         float dScene = sdf_scene(p);
 
+        // Utiliser la palette basée sur l'intensité lumineuse
+        float tColor = lightIntensity; // Utiliser lightIntensity pour varier la couleur
+        vec3 objectColor = palette(tColor);
+
         if (abs(dPlayer - dScene) < EPS) {
             // On a touché le cube joueur
-            col = l_col;
+            col = l_col * lightIntensity;
         } else {
             // On a touché d'autres objets
-            col = (diff) * vec3(0.8, 0.8, 0.8) + specular;
+            col = (diff * objectColor) + specular;
 
             // En vue première personne, changer la couleur en fonction de la proximité
             if (u_cameraMode == 1) {
@@ -157,7 +169,7 @@ void main() {
 
                 // Modifier la couleur en fonction de proximityFactor
                 vec3 closeColor = vec3(1.0, 0.0, 0.0); // Rouge pour les objets proches
-                vec3 farColor = vec3(0.8, 0.8, 0.8);   // Gris pour les objets éloignés
+                vec3 farColor = objectColor;           // Couleur originale
 
                 col = mix(farColor, closeColor, proximityFactor) * diff + specular;
             }
