@@ -177,10 +177,11 @@ async function main() {
 
   // Fonction pour redimensionner le canvas
   function resizeCanvas() {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    const scale = window.devicePixelRatio > 1 ? 0.5 : 1;
+    canvas.width = Math.floor(canvas.clientWidth * scale);
+    canvas.height = Math.floor(canvas.clientHeight * scale);
   }
-
+  
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas(); // Appel initial
 

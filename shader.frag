@@ -40,11 +40,21 @@ float smin(float a, float b, float k) {
 float mazeSize = 8.0;
 
 float sdf_scene(vec3 p) {
-    float sceneDistance = MAX_DIST; // Distance initiale élevée
+     float sceneDistance = MAX_DIST; // Distance initiale élevée
 
-    // Parcourir la matrice pour positionner les cubes (murs)
-    for (int x = 0; x < int(mazeSize); x++) {
-        for (int z = 0; z < int(mazeSize); z++) {
+    // Calculer les indices de la grille
+    int gridX = int(floor(p.x));
+    int gridZ = int(floor(p.z));
+
+    // Limiter les indices au labyrinthe
+    int minX = max(gridX - 1, 0);
+    int maxX = min(gridX + 1, int(mazeSize) - 1);
+    int minZ = max(gridZ - 1, 0);
+    int maxZ = min(gridZ + 1, int(mazeSize) - 1);
+
+    // Parcourir uniquement les cellules proches
+    for (int x = minX; x <= maxX; x++) {
+        for (int z = minZ; z <= maxZ; z++){
             // Obtenir la valeur de la cellule de la matrice
             float cellValue = texture(u_mazeTexture, vec2(float(x) + 0.5, float(z) + 0.5) / mazeSize).r;
 
@@ -53,13 +63,14 @@ float sdf_scene(vec3 p) {
 
                 // Distance au cube (mur)
                 float dCube = boxSDF(p - cubePos, vec3(0.5));
+
                 // Ajouter une sphère mobile au-dessus du cube
-                float yOffset = sin(u_time + float(x + z)) * (0.5*(float(z)+1.0)) + 1.0; // Mouvement vertical oscillant
+                float yOffset = sin(u_time + float(x + z)) * (0.5*(float(z)+1.0)) + 0.20; // Mouvement vertical oscillant
                 vec3 spherePos = cubePos + vec3(0.0, yOffset, 0.0);
                 float dSphere = sdp_sphere(p - spherePos, 0.3);
 
                 // Fusionner le cube et la sphère
-                float dCombined = smin(dCube, dSphere, 0.35); // Le 3e element permet de contrôler l'intensité du mélange
+                float dCombined = smin(dCube, dSphere, 0.7); // Le 3e element permet de contrôler l'intensité du mélange
 
                 // Prendre la distance minimale pour la scène
                 sceneDistance = min(sceneDistance, dCube);
@@ -69,12 +80,12 @@ float sdf_scene(vec3 p) {
     }
 
     // Ajouter le joueur (cube)
-    float dPlayer = boxSDF(p - u_playerPosition, vec3(0.3));
+    float dPlayer = boxSDF(p - u_playerPosition, vec3(0.1));
     sceneDistance = min(sceneDistance, dPlayer);
 
     // Ajouter un sol
     float dFloor = planeSDF(p, vec3(0.0, 1.0, 0.0), 0.0);
-    sceneDistance = min(sceneDistance, dFloor);
+    sceneDistance = smin(sceneDistance, dFloor, 0.15);
 
     return sceneDistance;
 }
